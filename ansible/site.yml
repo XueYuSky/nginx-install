@@ -1,0 +1,6 @@
+---
+- name: reverseproxy
+  hosts: reverseproxy-server
+  roles:
+    - common
+    - reverseproxy

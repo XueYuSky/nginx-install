@@ -1,0 +1,33 @@
+- name: add nf_conntrack to /etc/modules
+  blockinfile:
+    path: /etc/modules
+    block: |
+        nf_conntrack_ipv4
+        nf_conntrack_ipv6
+  become: true
+  notify: reboot system
+
+- name: copy nf_conntrak.conf
+  copy: src=nf_conntrak.conf dest=/etc/modprobe.d/nf_conntrak.conf owner=root group=root mode="a+r"
+  become: true
+  notify: reboot system
+
+- name: add nofile block to limits.conf
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+        *               soft    nofile  655360
+        *               hard    nofile  655360
+        root            soft    nofile  655360
+        root            hard    nofile  655360
+  become: true
+  notify: reboot system
+
+- name: copy conntrack to sysctl.d
+  copy: src=90-conntrack.conf dest=/etc/sysctl.d/90-conntrack.conf owner=root group=root mode="a+r"
+  become: true
+  notify: reboot system
+
+- name: Wait for the server to finish rebooting
+  local_action: wait_for host='{{inventory_hostname}}' search_regex=OpenSSH port=22 timeout=300
+

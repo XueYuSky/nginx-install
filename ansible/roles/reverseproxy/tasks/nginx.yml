@@ -1,0 +1,86 @@
+- name: install nginx
+  package:
+    pkg: nginx
+    state: latest
+  become: true
+
+- name: start nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  become: true
+
+- name: harden nginx
+  copy: src=harden.conf dest=/etc/nginx/conf.d/harden.conf owner=root group=root mode="a+r"
+  become: true
+  notify: restart nginx
+
+- name: remove default server
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  become: true
+  notify: restart nginx
+
+- name: increase worker_rlimit_nofile
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    insertafter: "worker_processes auto;"
+    line: 'worker_rlimit_nofile 20480;'
+  become: true
+  notify: restart nginx
+
+- name: increase worker_connections
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: 'worker_connections'
+    line: '        worker_connections 10240;'
+  become: true
+  notify: restart nginx
+
+- name: increase server_names_hash_bucket_size
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: 'server_names_hash_bucket_size'
+    line: '        server_names_hash_bucket_size 128;'
+  become: true
+  notify: restart nginx
+
+- name: comment gzip
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '#? ?gzip on;'
+    line: '        # gzip on;'
+  become: true
+  notify: restart nginx
+
+
+- name: copy admin conf
+  template: src=admin.conf.j2 dest=/etc/nginx/sites-available/admin.conf owner=root group=root
+  become: true
+  notify: restart nginx
+
+- name: enable site admin
+  file: src=/etc/nginx/sites-available/admin.conf path=/etc/nginx/sites-enabled/admin.conf state=link
+  become: true
+  notify: restart nginx
+
+- name: check has run certbot --nginx certonly
+  stat:
+    path: '/etc/letsencrypt/live/{{www_fully_qualified_domain_name}}/fullchain.pem'
+  become: true
+  register: fqdn_has_ssl_certificate
+
+- name: debug message fqdn_has_ssl_certificate
+  debug:
+    msg: "ssl certificate exists."
+  when: fqdn_has_ssl_certificate.stat.exists
+
+- name: copy www conf
+  template: src=www.conf.j2 dest=/etc/nginx/sites-available/www.conf owner=root group=root
+  become: true
+  notify: restart nginx
+
+- name: enable site www
+  file: src=/etc/nginx/sites-available/www.conf path=/etc/nginx/sites-enabled/www.conf state=link
+  become: true
+  notify: restart nginx

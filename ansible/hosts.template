@@ -1,0 +1,2 @@
+[reverseproxy-server]
+1.2.3.4_new_server_ip_address controller_ipaddress=1.2.3.4_your_pc www_fully_qualified_domain_name=www.xmu.edu.cn www_real_ip_address=210.34.0.12 ansible_python_interpreter=/usr/bin/python3 

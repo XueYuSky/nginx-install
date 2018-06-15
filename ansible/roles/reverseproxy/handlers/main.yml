@@ -1,0 +1,15 @@
+- name: restart firewalld
+  service:
+    name: firewalld
+    state: restarted
+  become: true
+
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+  become: true
+
+- name: reboot system
+  command: shutdown -r now 'Rebooting to complete system upgrade'
+  become: true

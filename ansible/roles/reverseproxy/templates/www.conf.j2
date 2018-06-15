@@ -1,0 +1,25 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{www_fully_qualified_domain_name}};
+
+    location / {
+            proxy_pass  http://{{www_real_ip_address}};
+            proxy_set_header Host            $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
+            proxy_set_header X-Real-IP       $remote_addr;
+    }
+
+{% if fqdn_has_ssl_certificate.stat.exists %}
+    if ($scheme != "https") {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen [::]:443 ssl http2 ipv6only=on; # managed by Certbot
+    listen 443 ssl http2; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/{{www_fully_qualified_domain_name}}/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/{{www_fully_qualified_domain_name}}/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+{% endif %}
+}

@@ -1,0 +1,34 @@
+- name: ensure ufw enabled
+  ufw:
+    state: enabled
+    policy: deny
+  become: true
+
+- name: copy user.rules
+  template: src=user.rules.j2 dest=/etc/ufw/user.rules owner=root group=root
+  become: true
+  notify: restart ufw
+
+- name: copy user6.rules
+  template: src=user6.rules.j2 dest=/etc/ufw/user6.rules owner=root group=root
+  become: true
+  notify: restart ufw
+
+- import_tasks: conntrack.yml 
+
+- import_tasks: nginx.yml 
+
+- name: lets encrypt
+  apt_repository:
+    repo: 'ppa:certbot/certbot'
+  become: true
+
+- name: install python-certbot-nginx
+  package:
+    pkg: python-certbot-nginx
+    state: latest
+  become: true
+
+- name: install renew to cron.daily
+  copy: src=renewletsencrypt dest=/etc/cron.daily/renewletsencrypt owner=root group=root mode="a+x"
+  become: true
